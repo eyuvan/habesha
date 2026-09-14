@@ -314,7 +314,7 @@
             // Voice announcement (Voice Calling)
             if ('speechSynthesis' in window) {
                 try {
-                    window.speechSynthesis.cancel(); // Stop previous voice
+                    window.speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance(callText);
                     utterance.lang = 'en-US';
                     utterance.rate = 0.9;
@@ -323,7 +323,7 @@
                     console.log("Audio not supported");
                 }
             }
-        }, 3000); // Calls new number every 3 seconds
+        }, 3000);
     }
 
     function openBingoBoard(stake) {
@@ -331,7 +331,7 @@
         document.getElementById('board-title').innerText = የ ${stake} ETB ውርርድ (1-600 ካርቴላ);
         document.getElementById('stake-selector-panel').classList.add('hidden');
         document.getElementById('bingo-board-panel').classList.remove('hidden');
-        startCountdown(); // 49 ሰከንድ ቆጠራውን ማስጀመር
+        startCountdown();
     }
 
     function closeBingoBoard() {
