@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Bingo</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: linear-gradient(135deg, #1b0a3a 0%, #0c0822 100%); 
+            margin: 0; 
+            padding: 15px; 
+            color: white; 
+            display: flex; 
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container { width: 100%; max-width: 450px; padding-bottom: 90px; }
+        .header-title { text-align: center; font-size: 24px; font-weight: bold; margin: 15px 0 5px 0; }
+        .header-highlight { color: #ffcc00; }
+        .brand-slogan { text-align: center; font-size: 13px; color: #a0a0c0; margin-bottom: 20px; font-style: italic; }
+        
+        .card-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        .card-title { font-size: 16px; color: #ffffff; margin-bottom: 10px; font-weight: 500; }
+        .play-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-green { background: linear-gradient(90deg, #00b48b 0%, #009b74 100%); }
+        .btn-blue { background: linear-gradient(90deg, #3b52ff 0%, #2a3cd1 100%); }
+        .play-btn:active { transform: scale(0.98); }
+        
+        /* Live Screen Display */
+        .live-screen {
+            background: #07061a;
+            border: 2px solid #ffcc00;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffcc00;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.2);
+            min-height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .countdown-box {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ff7643;
+            background: rgba(255, 118, 67, 0.1);
+            border: 1px solid rgba(255, 118, 67, 0.3);
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .numbers-grid { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 6px; 
+            margin: 10px 0; 
+            max-height: 250px; 
+            overflow-y: auto; 
+            padding-right: 5px;
+        }
+        .num-btn { 
+            background: rgba(255, 255, 255, 0.1); 
+            color: white; 
+            border: none; 
+            padding: 10px 0; 
+            font-size: 13px; 
+            font-weight: bold; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            transition: background 0.2s ease;
+        }
+        
+        /* Selected cartela numbers turned to RED */
+        .num-btn.selected { 
+            background: #ff2a2a !important; 
+            color: #ffffff;
+            box-shadow: 0 0 8px rgba(255, 42, 42, 0.8);
+        }
+        
+        .bet-action-btn { background: #22c55e; color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 10px; width: 100%; margin-top: 10px; cursor: pointer; }
+		.submit-btn { background: #4f46e5; color: white; border: none; padding: 12px; font-size: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; }
+        
+        /* Wallet Cards */
+        .wallet-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            text-align: left;
+            border-left: 4px solid #ffcc00;
+        }
+        .wallet-card.play-w { border-left-color: #00b48b; }
+        .wallet-title { font-size: 13px; color: #a0a0c0; }
+        .wallet-amount { font-size: 20px; font-weight: bold; color: #00ff00; margin-top: 5px; }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 450px;
+            background: #0f0b26;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            padding: 10px 0;
+            z-index: 100;
+        }
+        .nav-item { text-align: center; color: #726e95; cursor: pointer; font-size: 11px; }
+        .nav-item.active { color: #3b52ff; font-weight: bold; }
+        .nav-icon { font-size: 18px; margin-bottom: 2px; }
+        .hidden { display: none; }
+        input { width: 90%; padding: 12px; margin: 8px 0; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: #07061a; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- GAME TAB -->
+    <div id="tab-game">
+        <div class="header-title">Lucky <span class="header-highlight">Bingo</span></div>
+        <div class="brand-slogan">"ከመልክ ዕድል ያምራል"</div>
+        
+        <!-- Stake Selector Panel -->
+        <div class="card-box" id="stake-selector-panel">
+            <div class="card-title">የውርርድ መጠን ይምረጡ</div>
+            <button class="play-btn btn-green" onclick="openBingoBoard(10)">▶ Play 10 ETB</button>
+            <button class="play-btn btn-blue" onclick="openBingoBoard(20)">▶ Play 20 ETB</button>
+        </div>
+
+        <!-- Bingo Board Panel (1 - 600) -->
+        <div class="card-box hidden" id="bingo-board-panel">
+            <div class="live-screen" id="live-screen-display">ከ 1 እስከ 600 ካርቴላ ይምረጡ</div>
+            <div class="countdown-box" id="countdown-display">⏳ የሚቀረው ጊዜ: 49 ሰከንድ</div>
+            
+            <div class="card-title" id="board-title">እጣ ቁጥሮችዎን ይምረጡ</div>
+            <div class="numbers-grid" id="numbers-container"></div>
+            <button class="bet-action-btn" id="bet-btn" onclick="sendBetToTelegram()">ውርርድ መዝግብ (Bet)</button>
+            <button class="submit-btn" style="background:#6c757d;" onclick="closeBingoBoard()">ተመለስ</button>
+        </div>
+    </div>
+
+    <!-- WALLET TAB -->
+    <div id="tab-wallet" class="hidden">
+        <div class="header-title">የኪስ ቦርሳ (Wallet)</div>
+        <div class="card-box">
+            <!-- Main Wallet -->
+            <div class="wallet-card">
+                <div class="wallet-title">🏦 ዋናው የኪስ ቦርሳ (Main Wallet)</div>
+                <div class="wallet-amount" id="main-wallet-balance">10.00 ETB</div>
+            </div>
+            <!-- Play Wallet -->
+            <div class="wallet-card play-w">
+                <div class="wallet-title">🎮 የጨዋታ ቦርሳ (Play Wallet)</div>
+                <div class="wallet-amount" id="play-wallet-balance">10.00 ETB</div>
+            </div>
+            
+            <input type="number" id="transfer-amount" placeholder="ወደ ጨዋታ ቦርሳ ማዛወሪያ ብር">
+            <button class="submit-btn" onclick="transferToPlayWallet()">ብር ወደ Play Wallet አዛውር</button>
+        </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="tab-history" class="hidden">
+        <div class="header-title">የውርርድ ታሪክ (History)</div>
+        <div class="card-box">
+            <div style="color: #a0a0c0; font-size: 14px;">እስካሁን ያደረጉት ውርርድ የለም።</div>
+        </div>
+    </div>
+	<!-- PROFILE TAB -->
+    <div id="tab-profile" class="hidden">
+        <div class="header-title">የተጠቃሚ መገለጫ (Profile)</div>
+        <div class="card-box">
+            <div style="font-size: 16px; margin-bottom: 10px;">👤 ስም: <span id="user-name" style="color:#ffcc00;">ተጫዋች</span></div>
+            <div style="font-size: 14px; color: #a0a0c0;">መክፈቻ መርህ: ከመልክ ዕድል ያምራል</div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <div class="bottom-nav">
+        <div class="nav-item active" id="nav-game" onclick="switchTab('game')"><div class="nav-icon">🎮</div><div>Game</div></div>
+        <div class="nav-item" id="nav-wallet" onclick="switchTab('wallet')"><div class="nav-icon">💼</div><div>Wallet</div></div>
+        <div class="nav-item" id="nav-history" onclick="switchTab('history')"><div class="nav-icon">📜</div><div>History</div></div>
+        <div class="nav-item" id="nav-profile" onclick="switchTab('profile')"><div class="nav-icon">👤</div><div>Profile</div></div>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    try { tg.expand(); } catch (e) {}
+
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name || "ተጫዋች";
+    }
+
+    let selectedStake = 10;
+    let selectedNumbers = new Set();
+    let mainWallet = 10.00;
+    let playWallet = 10.00;
+    let countdownInterval;
+    let callingInterval;
+
+    // 1 እስከ 600 ያሉትን የካርቴላ ቁጥሮች መጫኛ ሎፕ
+    const container = document.getElementById('numbers-container');
+    for (let i = 1; i <= 600; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'num-btn';
+        btn.innerText = i;
+        btn.id = num-${i};
+        btn.onclick = () => {
+            if (selectedNumbers.has(i)) {
+                selectedNumbers.delete(i);
+                btn.classList.remove('selected');
+            } else {
+                selectedNumbers.add(i);
+                btn.classList.add('selected');
+            }
+        };
+        container.appendChild(btn);
+    }
+
+    function startCountdown() {
+        clearInterval(countdownInterval);
+        clearInterval(callingInterval);
+        let timeLeft = 49;
+        const cdDisplay = document.getElementById('countdown-display');
+        const liveScreen = document.getElementById('live-screen-display');
+        const betBtn = document.getElementById('bet-btn');
+        
+        betBtn.disabled = false;
+        betBtn.style.opacity = "1";
+        liveScreen.innerText = "ከ 1 እስከ 600 ካርቴላ ይምረጡ";
+        cdDisplay.innerText = ⏳ የሚቀረው ጊዜ: ${timeLeft} ሰከንድ;
+        
+        countdownInterval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft > 0) {
+                cdDisplay.innerText = ⏳ የሚቀረው ጊዜ: ${timeLeft} ሰከንድ;
+            } else {
+                cdDisplay.innerText = 🎉 የቢንጎ እጣ ቁጥሮች ጥሪ ተጀምሯል!;
+                clearInterval(countdownInterval);
+                betBtn.disabled = true;
+                betBtn.style.opacity = "0.5";
+                startBingoCalling();
+            }
+        }, 1000);
+    }
+
+    // B-I-N-G-O Bingo calling generator
+    function startBingoCalling() {
+        let calledList = [];
+        const liveScreen = document.getElementById('live-screen-display');
+        
+        callingInterval = setInterval(() => {
+            if (calledList.length >= 75) {
+                clearInterval(callingInterval);
+                liveScreen.innerText = "🏆 ጨዋታው ተጠናቋል!";
+                return;
+            }
+
+            // Generate unique random number from 1 to 75
+            let num;
+            do {
+                num = Math.floor(Math.random() * 75) + 1;
+            } while (calledList.includes(num));
+            
+            calledList.push(num);
+
+            // B-I-N-G-O Letter assignment
+			let letter = "";
+            if (num >= 1 && num <= 15) letter = "B";
+            else if (num >= 16 && num <= 30) letter = "I";
+            else if (num >= 31 && num <= 45) letter = "N";
+            else if (num >= 46 && num <= 60) letter = "G";
+            else if (num >= 61 && num <= 75) letter = "O";
+
+            let callText = ${letter} ${num};
+            liveScreen.innerText = 🎲 ${callText};
+
+            // Voice announcement (Voice Calling)
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel(); // Stop previous voice
+                    const utterance = new SpeechSynthesisUtterance(callText);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.9;
+                    window.speechSynthesis.speak(utterance);
+                } catch (err) {
+                    console.log("Audio not supported");
+                }
+            }
+        }, 3000); // Calls new number every 3 seconds
+    }
+
+    function openBingoBoard(stake) {
+        selectedStake = stake;
+        document.getElementById('board-title').innerText = የ ${stake} ETB ውርርድ (1-600 ካርቴላ);
+        document.getElementById('stake-selector-panel').classList.add('hidden');
+        document.getElementById('bingo-board-panel').classList.remove('hidden');
+        startCountdown(); // 49 ሰከንድ ቆጠራውን ማስጀመር
+    }
+
+    function closeBingoBoard() {
+        clearInterval(countdownInterval);
+        clearInterval(callingInterval);
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+        document.getElementById('stake-selector-panel').classList.remove('hidden');
+        document.getElementById('bingo-board-panel').classList.add('hidden');
+    }
+
+    function transferToPlayWallet() {
+        const amount = parseFloat(document.getElementById('transfer-amount').value);
+        if (isNaN(amount) || amount <= 0) {
+            alert("እባክዎ ትክክለኛ የብር መጠን ያስገቡ!");
+            return;
+        }
+        if (amount > mainWallet) {
+            alert("በዋናው የኪስ ቦርሳዎ (Main Wallet) በቂ ብር የለም!");
+            return;
+        }
+        mainWallet -= amount;
+        playWallet += amount;
+        document.getElementById('main-wallet-balance').innerText = mainWallet.toFixed(2) + " ETB";
+        document.getElementById('play-wallet-balance').innerText = playWallet.toFixed(2) + " ETB";
+        document.getElementById('transfer-amount').value = "";
+        alert(${amount} ETB ወደ ጨዋታ ቦርሳ ተዘዋውሯል!);
+    }
+
+    function switchTab(tabName) {
+        ['game', 'wallet', 'history', 'profile'].forEach(t => {
+            const tab = document.getElementById(tab-${t});
+            const nav = document.getElementById(nav-${t});
+            if (tab) tab.classList.add('hidden');
+            if (nav) nav.classList.remove('active');
+        });
+        const activeTab = document.getElementById(tab-${tabName});
+        const activeNav = document.getElementById(nav-${tabName});
+        if (activeTab) activeTab.classList.remove('hidden');
+        if (activeNav) activeNav.classList.add('active');
+    }
+
+    function sendBetToTelegram() {
+        if (selectedNumbers.size === 0) { 
+            alert("እባክዎ መጀመሪያ ቢያንስ አንድ ካርቴላ ይምረጡ!"); 
+            return; 
+        }
+        const totalCost = selectedNumbers.size * selectedStake;
+        if (totalCost > playWallet) {
+            alert(ለዚህ ውርርድ የሚሆን በቂ ብር በ Play Wallet ውስጥ የለም! የሚያስፈልገው: ${totalCost} ETB);
+            return;
+        }
+
+        playWallet -= totalCost;
+        document.getElementById('play-wallet-balance').innerText = playWallet.toFixed(2) + " ETB";
+
+        try {
+            tg.sendData(JSON.stringify({
+                numbers: Array.from(selectedNumbers),
+                stake: selectedStake,
+                total_cost: totalCost,
+                total_numbers: selectedNumbers.size
+            }));
+            alert("ውርርድዎ በተሳካ ሁኔታ ተመዝግቧል!");
+        } catch (e) {
+            alert("ውርርዱ በ Play Wallet ተመዝግቧል!");
+        }
+    }
+</script>
+</body>
+</html>
